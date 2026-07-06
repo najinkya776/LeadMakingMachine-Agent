@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Harvester</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --panel: #141414;
+    --panel-2: #181818;
+    --line: #2a2a2a;
+    --line-soft: #222;
+    --text: #e8e8e8;
+    --muted: #8a8a8a;
+    --accent: #ff7a1a;
+    --accent-dim: #5a3517;
+    --ok: #4ade80;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 80px; }
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 650; margin: 0; letter-spacing: .2px; }
+  h1 .dot { color: var(--accent); }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 13px; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 18px 20px; margin-bottom: 18px;
+  }
+  .panel h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--muted); margin: 0 0 14px; font-weight: 600;
+  }
+  .tier-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--accent); margin: 14px 0 9px; font-weight: 600;
+  }
+  .tier-label:first-child { margin-top: 0; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 7px 12px; cursor: pointer; user-select: none;
+    transition: border-color .15s ease, color .15s ease;
+    font-size: 13px;
+  }
+  .chip:hover { border-color: #4a4a4a; }
+  .chip .marker { opacity: 0; color: var(--accent); font-weight: 700; transition: opacity .15s; }
+  .chip.sel { border-color: var(--accent); color: var(--accent); }
+  .chip.sel .marker { opacity: 1; }
+  .chip .meta { color: var(--muted); font-size: 11px; }
+  .chip.sel .meta { color: var(--accent); }
+
+  .cat-tools { display: flex; gap: 10px; margin-bottom: 12px; }
+  .linkbtn {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 12px; padding: 2px 4px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .linkbtn:hover { color: var(--accent); }
+  .cat-area { max-height: 168px; overflow-y: auto; padding-right: 4px; }
+
+  .row { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  input[type=number] {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 9px 11px; width: 130px; font-size: 14px;
+    transition: border-color .15s;
+  }
+  input[type=number]:focus { outline: none; border-color: var(--accent); }
+  .hint { color: var(--muted); font-size: 11px; }
+
+  /* outlined toggle - lights the border, no fill */
+  .toggle { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; }
+  .switch {
+    width: 40px; height: 22px; border: 1px solid var(--line); border-radius: 999px;
+    position: relative; transition: border-color .15s;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s;
+  }
+  .toggle.on .switch { border-color: var(--accent); }
+  .toggle.on .switch::after { transform: translateX(18px); background: var(--accent); }
+
+  .actions { display: flex; align-items: center; gap: 16px; margin-top: 4px; }
+  .btn {
+    background: transparent; color: var(--accent); border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 11px 22px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+  }
+  .btn:hover:not(:disabled) { background: var(--accent-dim); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* progress */
+  #progress { display: none; }
+  .bar { height: 4px; background: var(--line-soft); border-radius: 99px; overflow: hidden; margin-top: 12px; }
+  .bar > span {
+    display: block; height: 100%; width: 35%; background: var(--accent); border-radius: 99px;
+    animation: slide 1.1s ease-in-out infinite;
+  }
+  @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+  .phase { color: var(--muted); font-size: 13px; }
+  .phase b { color: var(--text); font-weight: 500; }
+
+  /* results */
+  #results { display: none; }
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .stat {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 11px 16px; min-width: 110px;
+  }
+  .stat .n { font-size: 22px; font-weight: 650; }
+  .stat .n.accent { color: var(--accent); }
+  .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
+  td { color: #d0d0d0; }
+  .tbl-wrap { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius); margin-top: 8px; }
+  .blank { color: #555; }
+
+  .note { color: var(--muted); font-size: 12px; margin-top: 10px; border-left: 2px solid var(--accent); padding-left: 10px; }
+  .err { color: #ff6b6b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Lead Harvester<span class="dot">.</span></h1>
+  </header>
+  <p class="sub">Target a region, pull every no-website business we can find, export contacts to Excel.</p>
+
+  <div class="panel">
+    <h2>1 &nbsp;·&nbsp; Target Region</h2>
+    <div id="regions"></div>
+  </div>
+
+  <div class="panel">
+    <h2>2 &nbsp;·&nbsp; Business Categories</h2>
+    <div class="cat-tools">
+      <button class="linkbtn" onclick="setAllCats(true)">Select all</button>
+      <button class="linkbtn" onclick="setAllCats(false)">Clear</button>
+      <span class="hint" id="catCount" style="margin-left:auto;"></span>
+    </div>
+    <div class="cat-area"><div class="chips" id="cats"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>3 &nbsp;·&nbsp; Options</h2>
+    <div class="field" style="margin-bottom:16px;">
+      <label>Website filter</label>
+      <div class="chips" id="filterChips">
+        <div class="chip sel" data-f="no_website" onclick="selectFilter('no_website', this)"><span class="marker">●</span> No website <span class="meta">India angle</span></div>
+        <div class="chip" data-f="has_website" onclick="selectFilter('has_website', this)"><span class="marker">●</span> Has website <span class="meta">redesign / SEO</span></div>
+        <div class="chip" data-f="all" onclick="selectFilter('all', this)"><span class="marker">●</span> All <span class="meta">tagged</span></div>
+      </div>
+      <span class="hint" id="filterHint"></span>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="count">Total target leads</label>
+        <input type="number" id="count" value="80" min="5" max="2000" step="5" />
+        <span class="hint" id="spread"></span>
+      </div>
+      <div class="field">
+        <label>Guess emails (unverified)</label>
+        <div class="toggle" id="guessToggle" onclick="toggleGuess()">
+          <div class="switch"></div>
+          <span class="hint">fill blanks with info@&lt;name&gt;</span>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="goBtn" onclick="startHarvest()">Harvest Leads</button>
+      <span class="phase" id="goHint"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="progress">
+    <h2>Working</h2>
+    <div class="phase" id="phaseText">Starting…</div>
+    <div class="bar"><span></span></div>
+  </div>
+
+  <div class="panel" id="results">
+    <h2>Result</h2>
+    <div class="stats" id="stats"></div>
+    <button class="btn" id="dlBtn">Download Excel</button>
+    <div class="tbl-wrap" id="tblWrap"></div>
+    <div class="note" id="emailNote"></div>
+  </div>
+</div>
+
+<script>
+let REGION = null;
+let CATS = new Set();
+let GUESS = false;
+let FILTER = 'no_website';
+let CITY_COUNTS = {};
+let REGION_TIERS = {};
+let pollTimer = null;
+
+async function init() {
+  // Regions
+  const rg = await (await fetch('/api/regions')).json();
+  const host = document.getElementById('regions');
+  // tier order: english first, then india
+  const order = ['tier1_english', 'india'];
+  for (const tier of order) {
+    if (!rg[tier]) continue;
+    const lbl = document.createElement('div');
+    lbl.className = 'tier-label';
+    lbl.textContent = rg[tier].label;
+    host.appendChild(lbl);
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    for (const r of rg[tier].regions) {
+      CITY_COUNTS[r.key] = r.city_count;
+      REGION_TIERS[r.key] = tier;
+      const c = document.createElement('div');
+      c.className = 'chip';
+      c.dataset.key = r.key;
+      c.innerHTML = `<span class="marker">●</span> ${r.flag} ${r.label} <span class="meta">${r.city_count} ${r.city_count==1?'city':'cities'}</span>`;
+      c.onclick = () => selectRegion(r.key, c);
+      chips.appendChild(c);
+    }
+    host.appendChild(chips);
+  }
+
+  // Categories
+  const cg = await (await fetch('/api/categories')).json();
+  const ch = document.getElementById('cats');
+  for (const cat of cg.categories) {
+    CATS.add(cat);
+    const c = document.createElement('div');
+    c.className = 'chip sel';
+    c.dataset.cat = cat;
+    c.innerHTML = `<span class="marker">✓</span> ${cat}`;
+    c.onclick = () => toggleCat(cat, c);
+    ch.appendChild(c);
+  }
+  updateCatCount();
+  updateSpread();
+  document.getElementById('count').addEventListener('input', updateSpread);
+}
+
+function selectRegion(key, el) {
+  REGION = key;
+  document.querySelectorAll('#regions .chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  updateSpread();
+  // Smart suggestion: developed English markets are mostly already online,
+  // so the redesign/SEO ("has website") angle yields far more there.
+  const hint = document.getElementById('filterHint');
+  if (REGION_TIERS[key] === 'tier1_english' && FILTER === 'no_website') {
+    hint.innerHTML = '⚠ Most businesses here already have a website — consider <b>Has website</b> (redesign/SEO) for volume.';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function selectFilter(f, el) {
+  FILTER = f;
+  document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  // Re-evaluate the suggestion against the current region.
+  const hint = document.getElementById('filterHint');
+  if (REGION && REGION_TIERS[REGION] === 'tier1_english' && FILTER === 'no_website') {
+    hint.innerHTML = '⚠ Most businesses here already have a website — consider <b>Has website</b> (redesign/SEO) for volume.';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function toggleCat(cat, el) {
+  if (CATS.has(cat)) { CATS.delete(cat); el.classList.remove('sel'); }
+  else { CATS.add(cat); el.classList.add('sel'); }
+  updateCatCount();
+}
+function setAllCats(on) {
+  document.querySelectorAll('#cats .chip').forEach(el => {
+    const cat = el.dataset.cat;
+    if (on) { CATS.add(cat); el.classList.add('sel'); }
+    else { CATS.delete(cat); el.classList.remove('sel'); }
+  });
+  updateCatCount();
+}
+function updateCatCount() {
+  document.getElementById('catCount').textContent = `${CATS.size} selected`;
+}
+function toggleGuess() {
+  GUESS = !GUESS;
+  document.getElementById('guessToggle').classList.toggle('on', GUESS);
+}
+function updateSpread() {
+  const n = parseInt(document.getElementById('count').value || '0', 10);
+  const cities = REGION ? CITY_COUNTS[REGION] : 0;
+  const el = document.getElementById('spread');
+  if (REGION && cities) {
+    el.textContent = `~${Math.max(Math.floor(n / cities), 5)} per city across ${cities} ${cities==1?'city':'cities'}`;
+  } else {
+    el.textContent = 'pick a region';
+  }
+}
+
+async function startHarvest() {
+  if (!REGION) { flashHint('Pick a region first.'); return; }
+  if (CATS.size === 0) { flashHint('Select at least one category.'); return; }
+
+  document.getElementById('goBtn').disabled = true;
+  document.getElementById('goHint').textContent = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('progress').style.display = 'block';
+  document.getElementById('phaseText').textContent = 'Queued…';
+
+  const body = {
+    region: REGION,
+    categories: Array.from(CATS),
+    count: parseInt(document.getElementById('count').value || '80', 10),
+    guess_emails: GUESS,
+    website_filter: FILTER,
+  };
+  const res = await fetch('/api/harvest', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const { job_id } = await res.json();
+  poll(job_id);
+}
+
+function poll(jobId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    const job = await (await fetch('/api/jobs/' + jobId)).json();
+    const pt = document.getElementById('phaseText');
+    pt.innerHTML = `<b>${(job.phase || '').toUpperCase()}</b> &nbsp; ${job.message || ''}`;
+    if (job.status === 'done') {
+      clearInterval(pollTimer);
+      renderResult(jobId, job.result);
+    } else if (job.status === 'error') {
+      clearInterval(pollTimer);
+      document.getElementById('progress').style.display = 'none';
+      document.getElementById('goBtn').disabled = false;
+      flashHint('Failed: ' + job.message, true);
+    }
+  }, 1400);
+}
+
+function renderResult(jobId, r) {
+  document.getElementById('progress').style.display = 'none';
+  document.getElementById('goBtn').disabled = false;
+  document.getElementById('results').style.display = 'block';
+
+  const dropLabel = r.website_filter === 'has_website' ? 'No website'
+                  : r.website_filter === 'all' ? 'Filtered out' : 'Had website';
+  const stats = [
+    { n: r.kept, l: 'Leads kept', accent: true },
+    { n: r.with_phone, l: 'With phone' },
+    { n: r.with_website, l: 'With website' },
+    { n: r.with_email, l: 'With email' },
+    { n: r.total_scraped, l: 'Total scraped' },
+    { n: r.dropped, l: dropLabel },
+  ];
+  document.getElementById('stats').innerHTML = stats.map(s =>
+    `<div class="stat"><div class="n ${s.accent?'accent':''}">${s.n}</div><div class="l">${s.l}</div></div>`
+  ).join('');
+
+  // preview table - show website column for has-website / all modes
+  const cols = r.website_filter === 'no_website'
+    ? ['business_name','category','phone','email','source_location']
+    : ['business_name','category','phone','website','source_location'];
+  const head = cols.map(c => `<th>${c.replace('_',' ')}</th>`).join('');
+  const rows = (r.preview || []).map(row =>
+    '<tr>' + cols.map(c => {
+      const v = row[c];
+      return `<td>${v ? String(v) : '<span class="blank">—</span>'}</td>`;
+    }).join('') + '</tr>'
+  ).join('');
+  document.getElementById('tblWrap').innerHTML =
+    `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+
+  const dl = document.getElementById('dlBtn');
+  if (r.filename) {
+    dl.style.display = 'inline-block';
+    dl.textContent = 'Download ' + r.filename;
+    dl.onclick = () => window.location = '/api/download/' + jobId;
+  } else {
+    dl.style.display = 'none';
+  }
+
+  const note = document.getElementById('emailNote');
+  if (r.website_filter === 'no_website' && r.with_email === 0 && r.kept > 0) {
+    note.textContent = 'No emails found — expected for no-website businesses. Phone is the primary contact for this segment.';
+  } else if (r.website_filter === 'has_website') {
+    note.textContent = 'Has-website leads: pitch a redesign / SEO / speed audit. Run these through the main pipeline\'s has-website branch.';
+  } else { note.textContent = ''; }
+}
+
+function flashHint(msg, isErr) {
+  const h = document.getElementById('goHint');
+  h.textContent = msg;
+  h.className = 'phase' + (isErr ? ' err' : '');
+}
+
+init();
+</script>
+</body>
+</html>

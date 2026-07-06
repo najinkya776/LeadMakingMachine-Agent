@@ -1,0 +1,64 @@
+# LeadMakingMachine Requirements
+
+# Core AI & Orchestration
+anthropic>=0.21.0
+crewai>=0.30.0
+langgraph>=0.0.20
+langchain>=0.1.0
+langchain-anthropic>=0.1.0
+
+# Database
+psycopg2-binary>=2.9.9
+redis>=5.0.0
+sqlalchemy>=2.0.0
+
+# Inbound Communication
+imaplib3>=0.9.8
+twilio>=8.10.0
+httpx>=0.26.0
+
+# Web Scraping & Crawling
+apify-client>=1.3.0
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# SEO & Performance
+lighthouse>=11.0.0
+pagespeedpy>=1.0.0
+
+# PDF Generation
+weasyprint>=60.0
+reportlab>=4.0.0
+
+# Email & Notifications
+jinja2>=3.1.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# Excel Export
+openpyxl>=3.1.0
+pdfplumber>=0.10.0
+
+# Utilities
+python-dateutil>=2.8.0
+tqdm>=4.66.0
+click>=8.1.0
+rich>=13.7.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+websockets>=11.0.0
+
+# Web Framework (for dashboard server)
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Dev
+black>=23.0.0
+ruff>=0.1.0
+mypy>=1.7.0

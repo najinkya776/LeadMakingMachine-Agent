@@ -1,0 +1,49 @@
+# Secrets (auto-managed)
+.env
+.env.local
+.env.*.local
+.env.bak
+tokens.txt
+../tokens.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+
+# Generated outputs (Excel exports, scraped data)
+exports/
+output/
+out/
+downloads/
+leads/
+runs/
+logs/
+*.log
+*.xlsx
+*.csv
+!*.csv.example
+
+# App data
+data/
+*.db
+*.sqlite
+*.sqlite3
+screenshots/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
